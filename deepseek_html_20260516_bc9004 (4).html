@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS & GYN Data Filter</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #eef2f7;
+            display: flex;
+            justify-content: center;
+            padding: 15px;
+            direction: ltr;
+        }
+        .form-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            max-width: 1000px;
+            width: 100%;
+            padding: 25px 20px;
+            margin: 10px 0;
+        }
+        h1 {
+            font-size: 24px;
+            color: #1a3c5e;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #5e7289;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        .section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 18px;
+            color: #0f2a44;
+            border-bottom: 2px solid #dce5f0;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #1a3c5e;
+            font-size: 14px;
+        }
+        .filter-group select,
+        .filter-group input[type="text"],
+        .filter-group input[type="number"],
+        .filter-group input[type="date"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cfdde9;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+            transition: 0.2s;
+        }
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #3b6eb0;
+            box-shadow: 0 0 0 3px rgba(59,110,176,0.15);
+        }
+        .range-inputs {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .range-inputs input {
+            flex: 1;
+        }
+        .range-inputs span {
+            font-size: 12px;
+            color: #64748b;
+            white-space: nowrap;
+        }
+        .checkbox-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            background: white;
+            padding: 8px;
+            border: 1px solid #cfdde9;
+            border-radius: 8px;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+        .checkbox-list label {
+            font-weight: 400;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            color: #1a3c5e;
+        }
+        .checkbox-list input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 25px 0 15px;
+        }
+        button {
+            background: #1a3c5e;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 28px;
+            font-size: 16px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        button:disabled {
+            background: #a0b4cc;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background: #0f2a44;
+        }
+        .results {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            margin-top: 10px;
+        }
+        .row-count {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 15px;
+            color: #1a3c5e;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 2000px;
+        }
+        th {
+            background: #1a3c5e;
+            color: white;
+            padding: 10px 8px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        tr:hover td {
+            background: #f8fafc;
+        }
+        .loading-bar {
+            text-align: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            color: #5e7289;
+            font-weight: 500;
+        }
+
+        @media (max-width: 600px) {
+            .form-container { padding: 16px 12px; }
+            h1 { font-size: 20px; }
+            .section { padding: 14px; }
+            .filter-grid { grid-template-columns: 1fr; }
+            .actions { flex-direction: column; align-items: center; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="form-container">
+    <h1>📊 OBS & GYN Data Filter</h1>
+    <p class="subtitle">Live data from Google Sheet – Sohag General Hospital</p>
+
+    <div id="loadingBar" class="loading-bar">⏳ Loading data from Google Sheet…</div>
+
+    <div class="section">
+        <div class="section-title">🧾 Patient Information</div>
+        <div class="filter-grid" id="section-patient"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">🏥 Medical History & Parity</div>
+        <div class="filter-grid" id="section-history"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">🩻 Vital Signs (MEOW)</div>
+        <div class="filter-grid" id="section-vitals"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">🩸 Blood Transfusion</div>
+        <div class="filter-grid" id="section-blood"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">📋 Management & Delivery</div>
+        <div class="filter-grid" id="section-management"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">📝 Outcome</div>
+        <div class="filter-grid" id="section-outcome"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">👨‍⚕️ Surgeons & Staff</div>
+        <div class="filter-grid" id="section-surgeons"></div>
+    </div>
+
+    <div class="actions">
+        <button id="searchBtn">🔍 Apply Filters</button>
+        <button id="exportBtn" disabled>📥 Download Excel</button>
+    </div>
+
+    <div class="results">
+        <div id="rowCount" class="row-count"></div>
+        <div class="table-wrapper" id="tableContainer"></div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ==============================================
+        // LIVE DATA URL using Google Visualization API
+        // ==============================================
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hBVpoJzhE43DrKzM849VNxnod2-Yeryh9TlHctsgXPg/gviz/tq?tqx=out:csv";
+
+        const ALL_COLUMNS = [
+            "recording_date","patient_name","age","address","admission_date","ticket_id","shift_day",
+            "comorbidities","past_medical","prev_surgery","surgery_type",
+            "parity_type","exact_parity","living_children","living_males","last_delivery_time","last_abortion_time",
+            "prev_cs","cs_number",
+            "sbp","dbp","pulse","temperature","resp_rate","consciousness","o2_sat","urine_output","meow_score",
+            "lab_tests","positive_lab_data","imaging","positive_imaging_data",
+            "blood_transfusion","blood_group","transfused",
+            "case_type","preg_condition","preg_condition_other","gestational_age","exact_gestational_age","admission_reason",
+            "labour_onset","pregnancy_type","fetal_presentation","delivery_date","delivery_mode",
+            "fetus_gender","fetal_complications","maternal_complications","delivery_report","robson","contraceptive","contraceptive_refusal_reason",
+            "consultant","specialist","residents","scrub_nurse","treatment_type","entered_by"
+        ];
+
+        const SECTION_MAP = {
+            "Patient Information": ["recording_date","patient_name","age","address","shift_day"],
+            "Medical History & Parity": ["comorbidities","past_medical","parity_type","exact_parity","prev_cs","cs_number"],
+            "Vital Signs (MEOW)": ["sbp","dbp","meow_score"],
+            "Blood Transfusion": ["blood_transfusion","blood_group","transfused"],
+            "Management & Delivery": ["case_type","preg_condition","preg_condition_other","gestational_age","exact_gestational_age","admission_reason","labour_onset","pregnancy_type","fetal_presentation","delivery_date","delivery_mode"],
+            "Outcome": ["fetus_gender","fetal_complications","maternal_complications","robson","contraceptive","contraceptive_refusal_reason"],
+            "Surgeons & Staff": ["consultant","specialist","residents","scrub_nurse","treatment_type","entered_by"]
+        };
+
+        const OPTIONS = {
+            shift_day: ["Any","الجمعة","السبت","الاحد","الاثنين","الثلاثاء","الاربعاء","الخميس"],
+            parity_type: ["Any","Nullipara","Multipara"],
+            prev_cs: ["Any","Yes","No"],
+            sbp: ["Any","score 0:101-149","score 1:90-100","score 1:150-159","score 2:less than 90","score 2:more than 160"],
+            dbp: ["Any","score 0:50-79","score 1:80-89","score 2:less than 50","score 2:90 or more"],
+            meow_score: ["Any","0-1 (normal)","2-3 (abnormal but stable – evaluate within same day)","4-5 (abnormal and unstable – evaluate within 30 min)","=6 (abnormal and critical – evaluate within 10 min)"],
+            blood_transfusion: ["Any","yes","no"],
+            case_type: ["Any","Obstetric case","Gynecological case","Complicated case(outside or inside)"],
+            preg_condition: ["Any","NO","pre-eclampsia","Eclampsia","HEELP syndrome","Gestational hypertension","Gestational thrombocytopenia","Gestational diabetes","Gestational proteinuria","Acute fatty liver","Cholestasis of pregnancy","Hyperemesis of gravidarum","Pyelonephritis with pregnancy","Hypothyroidism","Anaemia","other"],
+            gestational_age: ["Any",">37 weeks","<37 weeks"],
+            admission_reason: ["Any","For delivery","Abortion","For follow up","Vesicular mole","Ectopic pregnancy"],
+            labour_onset: ["Any","Spontaneous","Induced","Prelabour"],
+            pregnancy_type: ["Any","Single","Multiple"],
+            fetal_presentation: ["Any","Cephalic","Breech","Transverse or oblique","Face","Brow","Complex"],
+            delivery_mode: ["Any","Vaginal","C/S"],
+            robson: ["Any",
+                "Group 1(pg-single-cephalic-term-spontaneous labour)",
+                "Group 2a(pg-single-cephalic-term-induced labour)",
+                "Group 2b(pg-single-cephalic-term-elective or prelabour)",
+                "Group 3(multi-single-cephalic-term-spontaneous lab without uterine scar)",
+                "Group 4a(multi-single-cephalic-term-induced-without scar)",
+                "Group 4b(multi-single-cephalic-term-elective or prelabour-without scar)",
+                "Group 5a(previous one-single-cephalic-term-spontaneous,or elective)",
+                "Group 5b(previous 2 or more scars-single-cephalic-term-spontaneous or elective)",
+                "Group 6(nullipara-breech-term)",
+                "Group 7(multi-breech-term-with or without previous c/s)",
+                "Group 8(twins-nulli or multi-with or without previous c/s)",
+                "Group 9(transverse or oblique lie-nulli or multi--with or without c/s)",
+                "Group 10(preterm-nulli or multi-single-cephalic-with or without c/s)"
+            ],
+            contraceptive: ["Any","NONE","IUD","IMPLANON"],
+            treatment_type: ["Any","طوارئ","مجانى(تكافل وكرامة-بحث اجتماعى-----الخ)","علاج بأجر","تأمين صحى","نفقة"],
+            comorbidities: ["None","Diabetes type 1","Diabetes TYPE 2","Asthmatic","SLE","Rheumatoid arthritis","Rheumatic heart disease","Ischemic heart disease","HyPOTHYROIDISM","BLOOD DISEASE","ANAEMIA","THALASSEMIA","OTHER"],
+            transfused: ["packed RBCS","Plasma","platelets","cryoprecipitate","None"],
+            fetal_complications: ["None","Fetal asphyxia","NICU admission","Neonatal mortality","fetal injury","stilbirth","preterm labour <37 weeks","Respiratory distress","congenital anomalies","IUFD","OTHER"],
+            maternal_complications: ["None","Intrapatum hge","PPH","Bladder injury","Bowel injury","Rupture uterus","Hystrectomy","3rd and 4th degree perineal tear","Pulmonary embolism","Maternal mortality","Haematoma","Rupture vagina","cervical tear","Broad ligament haematoma","anaesthetic complication","placenta accreta","abruptio placenta","other"]
+        };
+
+        let allRows = [];
+        let headers = [];
+        let filteredData = [];
+
+        function parseCSV(text) {
+            const rows = [];
+            let currentRow = [];
+            let currentField = '';
+            let inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+                if (inQuotes) {
+                    if (char === '"') {
+                        if (nextChar === '"') {
+                            currentField += '"';
+                            i++;
+                        } else {
+                            inQuotes = false;
+                        }
+                    } else {
+                        currentField += char;
+                    }
+                } else {
+                    if (char === '"') {
+                        inQuotes = true;
+                    } else if (char === ',') {
+                        currentRow.push(currentField);
+                        currentField = '';
+                    } else if (char === '\n') {
+                        currentRow.push(currentField);
+                        rows.push(currentRow);
+                        currentRow = [];
+                        currentField = '';
+                    } else if (char === '\r') {
+                        if (nextChar === '\n') {
+                            i++;
+                            currentRow.push(currentField);
+                            rows.push(currentRow);
+                            currentRow = [];
+                            currentField = '';
+                        }
+                    } else {
+                        currentField += char;
+                    }
+                }
+            }
+            if (currentField !== '' || currentRow.length > 0) {
+                currentRow.push(currentField);
+                rows.push(currentRow);
+            }
+            return rows;
+        }
+
+        async function loadData() {
+            document.getElementById("loadingBar").style.display = "block";
+            try {
+                const response = await fetch(SHEET_CSV_URL);
+                const csvText = await response.text();
+                const parsed = parseCSV(csvText);
+                if (parsed.length < 2) {
+                    alert("No data found.");
+                    return;
+                }
+                headers = parsed[0].map(h => h.trim());
+                allRows = parsed.slice(1).map(row => {
+                    const obj = {};
+                    headers.forEach((h, i) => {
+                        obj[h] = (row[i] || "").trim();
+                    });
+                    return obj;
+                });
+                document.getElementById("loadingBar").style.display = "none";
+                applyFilters();
+            } catch (error) {
+                document.getElementById("loadingBar").style.display = "none";
+                alert("Failed to load data. Make sure the sheet is shared as 'Anyone with the link can view'.");
+                console.error(error);
+            }
+        }
+
+        function buildFilters() {
+            Object.entries(SECTION_MAP).forEach(([sectionName, fields]) => {
+                let containerId;
+                if (sectionName === "Patient Information") containerId = "section-patient";
+                else if (sectionName === "Medical History & Parity") containerId = "section-history";
+                else if (sectionName === "Vital Signs (MEOW)") containerId = "section-vitals";
+                else if (sectionName === "Blood Transfusion") containerId = "section-blood";
+                else if (sectionName === "Management & Delivery") containerId = "section-management";
+                else if (sectionName === "Outcome") containerId = "section-outcome";
+                else if (sectionName === "Surgeons & Staff") containerId = "section-surgeons";
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                fields.forEach(fieldName => {
+                    const group = document.createElement("div");
+                    group.className = "filter-group";
+                    const label = document.createElement("label");
+                    label.textContent = fieldName.replace(/_/g, " ");
+                    group.appendChild(label);
+
+                    if (["age","cs_number","exact_gestational_age"].includes(fieldName)) {
+                        const div = document.createElement("div");
+                        div.className = "range-inputs";
+                        const from = document.createElement("input");
+                        from.type = "number"; from.placeholder = "From"; from.id = fieldName + "_from";
+                        const span = document.createElement("span"); span.textContent = "–";
+                        const to = document.createElement("input");
+                        to.type = "number"; to.placeholder = "To"; to.id = fieldName + "_to";
+                        div.appendChild(from); div.appendChild(span); div.appendChild(to);
+                        group.appendChild(div);
+                    }
+                    else if (["recording_date","delivery_date"].includes(fieldName)) {
+                        const div = document.createElement("div");
+                        div.className = "range-inputs";
+                        const from = document.createElement("input");
+                        from.type = "date"; from.id = fieldName + "_from";
+                        const span = document.createElement("span"); span.textContent = "–";
+                        const to = document.createElement("input");
+                        to.type = "date"; to.id = fieldName + "_to";
+                        div.appendChild(from); div.appendChild(span); div.appendChild(to);
+                        group.appendChild(div);
+                    }
+                    else if (OPTIONS.hasOwnProperty(fieldName) && !["comorbidities","transfused","fetal_complications","maternal_complications"].includes(fieldName)) {
+                        const select = document.createElement("select");
+                        select.id = fieldName;
+                        OPTIONS[fieldName].forEach(opt => {
+                            const option = document.createElement("option");
+                            option.value = opt; option.textContent = opt;
+                            select.appendChild(option);
+                        });
+                        group.appendChild(select);
+                    }
+                    else if (["comorbidities","transfused","fetal_complications","maternal_complications"].includes(fieldName)) {
+                        const cbDiv = document.createElement("div");
+                        cbDiv.className = "checkbox-list";
+                        const anyLbl = document.createElement("label");
+                        const anyCb = document.createElement("input");
+                        anyCb.type = "checkbox"; anyCb.value = "Any"; anyCb.id = fieldName + "_any"; anyCb.checked = true;
+                        anyLbl.appendChild(anyCb);
+                        anyLbl.appendChild(document.createTextNode(" Any"));
+                        cbDiv.appendChild(anyLbl);
+
+                        OPTIONS[fieldName].forEach(opt => {
+                            const lbl = document.createElement("label");
+                            const cb = document.createElement("input");
+                            cb.type = "checkbox"; cb.value = opt; cb.className = fieldName + "_cb";
+                            lbl.appendChild(cb);
+                            lbl.appendChild(document.createTextNode(" " + opt));
+                            cbDiv.appendChild(lbl);
+                        });
+
+                        cbDiv.addEventListener("change", (e) => {
+                            if (e.target.id === fieldName + "_any") {
+                                if (e.target.checked) {
+                                    document.querySelectorAll("." + fieldName + "_cb").forEach(c => c.checked = false);
+                                }
+                            } else {
+                                document.getElementById(fieldName + "_any").checked = false;
+                            }
+                        });
+                        group.appendChild(cbDiv);
+                    }
+                    else {
+                        const input = document.createElement("input");
+                        input.type = "text"; input.placeholder = "Search..."; input.id = fieldName;
+                        group.appendChild(input);
+                    }
+                    container.appendChild(group);
+                });
+            });
+        }
+
+        function applyFilters() {
+            filteredData = allRows.filter(row => matchesFilters(row));
+            renderTable(filteredData);
+        }
+
+        function matchesFilters(row) {
+            const allFields = Object.values(SECTION_MAP).flat();
+            for (let field of allFields) {
+                if (["age","cs_number","exact_gestational_age"].includes(field)) {
+                    const val = parseFloat(row[field]);
+                    if (isNaN(val)) continue;
+                    const from = document.getElementById(field + "_from")?.value;
+                    const to   = document.getElementById(field + "_to")?.value;
+                    if (from && val < parseFloat(from)) return false;
+                    if (to   && val > parseFloat(to)) return false;
+                    continue;
+                }
+                if (["recording_date","delivery_date"].includes(field)) {
+                    const cellDate = row[field];
+                    if (!cellDate) continue;
+                    const date = new Date(cellDate);
+                    if (isNaN(date.getTime())) continue;
+                    const from = document.getElementById(field + "_from")?.value;
+                    const to   = document.getElementById(field + "_to")?.value;
+                    if (from && new Date(from) > date) return false;
+                    if (to   && new Date(to) < date) return false;
+                    continue;
+                }
+                if (OPTIONS.hasOwnProperty(field) && !["comorbidities","transfused","fetal_complications","maternal_complications"].includes(field)) {
+                    const select = document.getElementById(field);
+                    if (select && select.value !== "Any") {
+                        if (row[field] !== select.value) return false;
+                    }
+                    continue;
+                }
+                if (["comorbidities","transfused","fetal_complications","maternal_complications"].includes(field)) {
+                    const anyCb = document.getElementById(field + "_any");
+                    if (anyCb && anyCb.checked) continue;
+                    const selected = [];
+                    document.querySelectorAll("." + field + "_cb:checked").forEach(cb => selected.push(cb.value));
+                    if (selected.length === 0) continue;
+                    const cellItems = (row[field] || "").split("\n").map(s => s.trim());
+                    if (!selected.some(sel => cellItems.includes(sel))) return false;
+                    continue;
+                }
+                const input = document.getElementById(field);
+                if (input && input.value.trim() !== "") {
+                    const search = input.value.trim().toLowerCase();
+                    if (!(row[field] || "").toLowerCase().includes(search)) return false;
+                }
+            }
+            return true;
+        }
+
+        function renderTable(data) {
+            const container = document.getElementById("tableContainer");
+            const rowCount = document.getElementById("rowCount");
+            const exportBtn = document.getElementById("exportBtn");
+            container.innerHTML = "";
+            rowCount.textContent = `${data.length} matching records`;
+            exportBtn.disabled = (data.length === 0);
+            if (data.length === 0) return;
+
+            const table = document.createElement("table");
+            const thead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+            ALL_COLUMNS.forEach(col => {
+                const th = document.createElement("th");
+                th.textContent = col;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement("tbody");
+            data.forEach(row => {
+                const tr = document.createElement("tr");
+                ALL_COLUMNS.forEach(col => {
+                    const td = document.createElement("td");
+                    td.textContent = row[col] || "";
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            container.appendChild(table);
+        }
+
+        document.getElementById("searchBtn").addEventListener("click", applyFilters);
+        document.getElementById("exportBtn").addEventListener("click", () => {
+            if (filteredData.length === 0) return;
+            const ws = XLSX.utils.json_to_sheet(filteredData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Filtered Data");
+            XLSX.writeFile(wb, "filtered_patient_data.xlsx");
+        });
+
+        buildFilters();
+        loadData();
+    })();
+</script>
+</body>
+</html>
