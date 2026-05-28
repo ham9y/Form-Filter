@@ -28,12 +28,21 @@
         button { background: #1a3c5e; color: white; border: none; cursor: pointer; font-weight: 600; padding: 12px 28px; font-size: 16px; border-radius: 8px; transition: background 0.2s; }
         button:disabled { background: #a0b4cc; cursor: not-allowed; }
         button:hover:not(:disabled) { background: #0f2a44; }
+
+        .sheet-link-above-table {
+            text-align: center; margin: 10px 0 15px;
+        }
+        .sheet-link-above-table a {
+            background: #1a3c5e; color: white; padding: 10px 24px; border-radius: 8px;
+            text-decoration: none; font-weight: 600; display: inline-block;
+        }
+
         .results { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); margin-top: 10px; }
         .row-count { font-weight: 600; margin-bottom: 12px; font-size: 15px; color: #1a3c5e; }
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 2000px; }
         th { background: #1a3c5e; color: white; padding: 10px 8px; text-align: left; position: sticky; top: 0; }
-        td { padding: 8px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+        td { padding: 8px; border-bottom: 1px solid #e2e8f0; white-space: pre-wrap; word-break: break-word; max-width: 300px; vertical-align: top; }
         tr:hover td { background: #f8fafc; }
         .loading-bar { text-align: center; padding: 12px; background: white; border-radius: 8px; margin-bottom: 16px; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); color: #5e7289; font-weight: 500; }
 
@@ -42,14 +51,6 @@
         .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #cfdde9; border-top: none; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 10; display: none; }
         .autocomplete-dropdown .item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
         .autocomplete-dropdown .item:hover, .autocomplete-dropdown .item.active { background: #f0f6ff; }
-
-        .sheet-link-bottom {
-            text-align: center; margin-top: 20px; margin-bottom: 10px;
-        }
-        .sheet-link-bottom a {
-            background: #1a3c5e; color: white; padding: 10px 24px; border-radius: 8px;
-            text-decoration: none; font-weight: 600; display: inline-block;
-        }
 
         @media (max-width: 600px) { .form-container { padding: 16px 12px; } h1 { font-size: 20px; } .section { padding: 14px; } .filter-grid { grid-template-columns: 1fr; } .actions { flex-direction: column; align-items: center; } button { width: 100%; } }
     </style>
@@ -86,17 +87,17 @@
         <button id="exportBtn" disabled>📥 Download Excel</button>
     </div>
 
-    <div class="results">
-        <div id="rowCount" class="row-count"></div>
-        <div class="table-wrapper" id="tableContainer"></div>
-    </div>
-
-    <!-- تعديل حالات مسجلة at the bottom -->
-    <div class="sheet-link-bottom">
+    <!-- تعديل حالات مسجلة button ABOVE the results table -->
+    <div class="sheet-link-above-table">
         <a href="https://docs.google.com/spreadsheets/d/1hBVpoJzhE43DrKzM849VNxnod2-Yeryh9TlHctsgXPg/edit?usp=sharing"
            target="_blank">
            تعديل حالات مسجلة
         </a>
+    </div>
+
+    <div class="results">
+        <div id="rowCount" class="row-count"></div>
+        <div class="table-wrapper" id="tableContainer"></div>
     </div>
 </div>
 
@@ -499,7 +500,7 @@
                 const tr = document.createElement("tr");
                 for (let i = 0; i < COLUMN_LABELS.length; i++) {
                     const td = document.createElement("td");
-                    td.textContent = (row[i] || "").trim();
+                    td.textContent = (row[i] || "");   // no trim, preserve newlines
                     tr.appendChild(td);
                 }
                 tbody.appendChild(tr);
