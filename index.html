@@ -34,11 +34,47 @@
 
         .results { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); margin-top: 10px; }
         .row-count { font-weight: 600; margin-bottom: 12px; font-size: 15px; color: #1a3c5e; }
-        .table-wrapper { overflow-x: auto; }
+
+        /* ENHANCED TABLE STYLES (Google‑Sheet‑like) */
+        .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #d1dbe6; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 2000px; }
-        th { background: #1a3c5e; color: white; padding: 10px 8px; text-align: left; position: sticky; top: 0; }
-        td { padding: 8px; border-bottom: 1px solid #e2e8f0; white-space: pre-wrap; word-break: break-word; max-width: 300px; vertical-align: top; }
-        tr:hover td { background: #f8fafc; }
+        th {
+            background: #f4f7fb;           /* light grey header like Sheets */
+            color: #1a3c5e;
+            font-weight: 600;
+            padding: 10px 8px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            border-bottom: 2px solid #c0ccda;   /* stronger bottom border */
+            border-right: 1px solid #d1dbe6;    /* vertical gridlines */
+            white-space: nowrap;
+        }
+        th:last-child { border-right: none; }
+
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;    /* vertical gridlines */
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-width: 300px;
+            vertical-align: top;
+        }
+        td:last-child { border-right: none; }
+
+        /* alternating row colors */
+        tbody tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+        tbody tr:nth-child(odd) td {
+            background: #ffffff;
+        }
+        tbody tr:hover td {
+            background: #eef2f7;
+        }
+
         .loading-bar { text-align: center; padding: 12px; background: white; border-radius: 8px; margin-bottom: 16px; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); color: #5e7289; font-weight: 500; }
 
         /* Autocomplete */
