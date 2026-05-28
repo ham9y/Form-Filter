@@ -29,13 +29,8 @@
         button:disabled { background: #a0b4cc; cursor: not-allowed; }
         button:hover:not(:disabled) { background: #0f2a44; }
 
-        .sheet-link-above-table {
-            text-align: center; margin: 10px 0 15px;
-        }
-        .sheet-link-above-table a {
-            background: #1a3c5e; color: white; padding: 10px 24px; border-radius: 8px;
-            text-decoration: none; font-weight: 600; display: inline-block;
-        }
+        .sheet-link-above-table { text-align: center; margin: 10px 0 15px; }
+        .sheet-link-above-table a { background: #1a3c5e; color: white; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block; }
 
         .results { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); margin-top: 10px; }
         .row-count { font-weight: 600; margin-bottom: 12px; font-size: 15px; color: #1a3c5e; }
@@ -500,7 +495,7 @@
                 const tr = document.createElement("tr");
                 for (let i = 0; i < COLUMN_LABELS.length; i++) {
                     const td = document.createElement("td");
-                    td.textContent = (row[i] || "");   // no trim, preserve newlines
+                    td.textContent = (row[i] || "");   // no trim, preserve \n
                     tr.appendChild(td);
                 }
                 tbody.appendChild(tr);
