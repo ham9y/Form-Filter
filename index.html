@@ -97,7 +97,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05); color: #5e7289; font-weight: 500;
         }
 
-        /* Custom autocomplete */
+        /* Autocomplete */
         .autocomplete-wrapper { position: relative; }
         .autocomplete-dropdown {
             position: absolute; top: 100%; left: 0; right: 0; background: white;
@@ -126,7 +126,7 @@
 
     <div id="loadingBar" class="loading-bar">⏳ Loading data from Google Sheet…</div>
 
-    <!-- Filter sections grouped logically, exactly like the form -->
+    <!-- Filter sections grouped logically -->
     <div class="section">
         <div class="section-title">🧾 Patient Information</div>
         <div class="filter-grid" id="section-patient"></div>
@@ -392,7 +392,7 @@
             }
         }
 
-        // Load doctor names for autocomplete
+        // Load doctor names (for autocomplete)
         async function loadDoctorsList() {
             try {
                 const resp = await fetch(DOCTORS_CSV_URL);
@@ -404,7 +404,9 @@
                     if (firstCol) names.push(firstCol);
                 }
                 doctorNames = [...new Set(names)];
-            } catch (err) { console.warn('Could not load doctors list:', err); }
+            } catch (err) {
+                console.warn('Could not load doctors list:', err);
+            }
         }
 
         // Custom autocomplete (word‑by‑word, starts‑with)
@@ -540,7 +542,7 @@
                             cbDiv.appendChild(lbl);
                         });
 
-                        // Exclusive "None" logic for relevant groups
+                        // Exclusive "None" logic
                         if (["comorbidities","preg_conditions","fetal_complications","maternal_complications"].includes(fieldName)) {
                             cbDiv.addEventListener("change", (e) => {
                                 const clicked = e.target;
@@ -554,12 +556,10 @@
                                         if (noneCb) noneCb.checked = false;
                                     }
                                 }
-                                // Also update "Any" checkbox state
                                 const anyCheckbox = document.getElementById(fieldName + "_any");
                                 if (anyCheckbox) anyCheckbox.checked = false;
                             });
                         } else {
-                            // Standard Any toggle
                             cbDiv.addEventListener("change", (e) => {
                                 if (e.target.id === fieldName + "_any") {
                                     if (e.target.checked) document.querySelectorAll("." + fieldName + "_cb").forEach(c => c.checked = false);
@@ -568,7 +568,7 @@
                         }
                         group.appendChild(cbDiv);
                     }
-                    // Text fields – use autocomplete for surgeon fields
+                    // Text fields – autocomplete for surgeon fields
                     else if (["consultant","specialist","residents","entered_by"].includes(fieldName)) {
                         const wrapper = document.createElement("div");
                         wrapper.className = "autocomplete-wrapper";
@@ -589,7 +589,7 @@
                 });
             });
 
-            // Initialize autocomplete on the ac-input fields
+            // Attach autocomplete after all elements are in DOM
             document.querySelectorAll('.ac-input').forEach(input => initAutocomplete(input));
         }
 
@@ -643,7 +643,7 @@
                     if (!selected.some(sel => cellItems.includes(sel))) return false;
                     continue;
                 }
-                // Text fields (contains, case‑insensitive) – including autocomplete fields
+                // Text fields (contains, case‑insensitive) – includes autocomplete fields
                 const input = document.getElementById(field);
                 if (input && input.value.trim() !== "") {
                     const search = input.value.trim().toLowerCase();
@@ -688,8 +688,8 @@
             XLSX.writeFile(wb, "filtered_patient_data.xlsx");
         });
 
-        // Initialize
-        Promise.all([loadDoctorsList()]).then(() => {
+        // Initialize: load doctors first, then build filters and load patient data
+        loadDoctorsList().then(() => {
             buildFilters();
             loadData();
         });
