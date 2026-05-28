@@ -43,6 +43,14 @@
         .autocomplete-dropdown .item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
         .autocomplete-dropdown .item:hover, .autocomplete-dropdown .item.active { background: #f0f6ff; }
 
+        .sheet-link-bottom {
+            text-align: center; margin-top: 20px; margin-bottom: 10px;
+        }
+        .sheet-link-bottom a {
+            background: #1a3c5e; color: white; padding: 10px 24px; border-radius: 8px;
+            text-decoration: none; font-weight: 600; display: inline-block;
+        }
+
         @media (max-width: 600px) { .form-container { padding: 16px 12px; } h1 { font-size: 20px; } .section { padding: 14px; } .filter-grid { grid-template-columns: 1fr; } .actions { flex-direction: column; align-items: center; } button { width: 100%; } }
     </style>
 </head>
@@ -53,7 +61,7 @@
 
     <div id="loadingBar" class="loading-bar">⏳ Loading data from Google Sheet…</div>
 
-    <!-- Filter sections – identical to form section layout -->
+    <!-- Filter sections – identical to form layout -->
     <div class="section"><div class="section-title">🧾 Patient Information</div><div class="filter-grid" id="section-patient"></div></div>
     <div class="section"><div class="section-title">🏥 Medical and surgical history</div><div class="filter-grid" id="section-history"></div></div>
     <div class="section"><div class="section-title">👶 Parity</div><div class="filter-grid" id="section-parity"></div></div>
@@ -82,13 +90,19 @@
         <div id="rowCount" class="row-count"></div>
         <div class="table-wrapper" id="tableContainer"></div>
     </div>
+
+    <!-- تعديل حالات مسجلة at the bottom -->
+    <div class="sheet-link-bottom">
+        <a href="https://docs.google.com/spreadsheets/d/1hBVpoJzhE43DrKzM849VNxnod2-Yeryh9TlHctsgXPg/edit?usp=sharing"
+           target="_blank">
+           تعديل حالات مسجلة
+        </a>
+    </div>
 </div>
 
 <script>
     (function() {
-        // ==============================================
         // Fixed column order (identical to form & script)
-        // ==============================================
         const FIELD_INDEX_MAP = {
             "timestamp": 0,
             "patient_name": 1, "age": 2, "address": 3, "admission_date": 4, "ticket_id": 5, "shift_day": 6,
@@ -111,7 +125,6 @@
             "consultant": 83, "specialist": 84, "residents": 85, "scrub_nurse": 86, "treatment_type": 87, "entered_by": 88
         };
 
-        // Column labels for the table header (can be renamed freely)
         const COLUMN_LABELS = [
             "Timestamp","Patient Name","Age","Address","Admission Date","Ticket ID","Shift Day",
             "Co‑morbidities","Past Medical History","Previous Surgery","Surgery Type",
@@ -133,7 +146,6 @@
             "Consultant","Specialist","Residents","Scrub Nurse","Treatment Type","Entered By"
         ];
 
-        // Fields that appear as filters (sections)
         const SECTION_MAP = {
             "Patient Information": ["patient_name","age","address","admission_date","ticket_id","shift_day"],
             "Medical and surgical history": ["comorbidities","past_medical","prev_surgery","surgery_type"],
@@ -155,7 +167,6 @@
             "SURGEONS": ["consultant","specialist","residents","scrub_nurse","treatment_type","entered_by"]
         };
 
-        // Options for dropdowns and checkboxes (same as form)
         const OPTIONS = {
             shift_day: ["Any","الجمعة","السبت","الاحد","الاثنين","الثلاثاء","الاربعاء","الخميس"],
             parity_type: ["Any","Nullipara","Multipara"],
@@ -203,7 +214,7 @@
             complicated_location: ["Outside hospital","Inside hospital","Illegal pregnancy"]
         };
 
-        let allRows = [];       // array of arrays (raw CSV rows, excluding header)
+        let allRows = [];
         let filteredData = [];
         let doctorNames = [];
 
@@ -238,7 +249,6 @@
                 const csvText = await response.text();
                 const parsed = parseCSV(csvText);
                 if (parsed.length < 2) { alert("No data found."); return; }
-                // Skip header row, keep raw arrays
                 allRows = parsed.slice(1);
                 document.getElementById("loadingBar").style.display = "none";
                 applyFilters();
@@ -309,7 +319,6 @@
             document.addEventListener('click', (e) => { if (!wrapper.contains(e.target)) { dropdown.style.display = 'none'; activeIndex = -1; } });
         }
 
-        // Build filter controls (positional IDs based on field names)
         function buildFilters() {
             const containerMap = {
                 "Patient Information": "section-patient",
@@ -375,7 +384,6 @@
                             lbl.appendChild(cb); lbl.appendChild(document.createTextNode(" " + opt));
                             cbDiv.appendChild(lbl);
                         });
-                        // None exclusivity
                         if (["comorbidities","preg_conditions","fetal_complications","maternal_complications"].includes(fieldName)) {
                             cbDiv.addEventListener("change", (e) => {
                                 const clicked = e.target;
@@ -413,7 +421,6 @@
             document.querySelectorAll('.ac-input').forEach(input => initAutocomplete(input));
         }
 
-        // Filter using positional indexing
         function applyFilters() {
             filteredData = allRows.filter(row => matchesFilters(row));
             renderTable(filteredData);
@@ -426,7 +433,6 @@
                 if (idx === undefined) continue;
                 let cellVal = (row[idx] || '').trim();
 
-                // Number ranges
                 if (["age","cs_number","exact_gestational_age","living_children","living_males"].includes(field)) {
                     const val = parseFloat(cellVal);
                     if (isNaN(val)) continue;
@@ -436,7 +442,6 @@
                     if (to   && val > parseFloat(to))   return false;
                     continue;
                 }
-                // Date ranges
                 if (["admission_date","delivery_date","gyn_op_date"].includes(field)) {
                     if (!cellVal) continue;
                     const date = new Date(cellVal);
@@ -447,7 +452,6 @@
                     if (to   && new Date(to) < date) return false;
                     continue;
                 }
-                // Dropdowns
                 if (OPTIONS.hasOwnProperty(field) && !["comorbidities","lab_tests","imaging","transfused","preg_conditions","cs_indications","fetal_complications","maternal_complications","ectopic_intervention","complicated_location"].includes(field)) {
                     const select = document.getElementById(field);
                     if (select && select.value !== "Any") {
@@ -455,7 +459,6 @@
                     }
                     continue;
                 }
-                // Checkbox groups
                 if (OPTIONS.hasOwnProperty(field)) {
                     const anyCb = document.getElementById(field + "_any");
                     if (anyCb && anyCb.checked) continue;
@@ -466,7 +469,6 @@
                     if (!selected.some(sel => cellItems.includes(sel))) return false;
                     continue;
                 }
-                // Text fields (contains)
                 const input = document.getElementById(field);
                 if (input && input.value.trim() !== "") {
                     const search = input.value.trim().toLowerCase();
@@ -495,7 +497,6 @@
             const tbody = document.createElement("tbody");
             data.forEach(row => {
                 const tr = document.createElement("tr");
-                // row is an array; use all columns up to the max index
                 for (let i = 0; i < COLUMN_LABELS.length; i++) {
                     const td = document.createElement("td");
                     td.textContent = (row[i] || "").trim();
@@ -510,7 +511,6 @@
         document.getElementById("searchBtn").addEventListener("click", applyFilters);
         document.getElementById("exportBtn").addEventListener("click", () => {
             if (filteredData.length === 0) return;
-            // Build objects from filtered rows for Excel export
             const exportData = filteredData.map(row => {
                 const obj = {};
                 Object.keys(FIELD_INDEX_MAP).forEach(field => {
@@ -524,7 +524,6 @@
             XLSX.writeFile(wb, "filtered_patient_data.xlsx");
         });
 
-        // Initialise
         loadDoctorsList().then(() => {
             buildFilters();
             loadData();
