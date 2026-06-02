@@ -286,8 +286,18 @@ async function loadData(){
   }
 }
 async function loadDoctors(){
-  try{const json=await fetchJSON(SCRIPT_URL+'?action=readDoctors');if(json.error)throw new Error(json.error);doctorNames=json.doctors||[];}
-  catch(e){console.error('Doctors:',e);if(allData.length){const s=new Set();[83,84,85,88].forEach(idx=>{allData.forEach(row=>{const v=(row[idx]||'').trim();if(v)v.split('\n').forEach(n=>{const t=n.trim();if(t)s.add(t);});});});doctorNames=Array.from(s).sort();}}
+  const DOCTORS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRDOEhW9VetivLm_3iGJgLJ9i86v0tcQcFpHw7TQBjZkWqr0TPM1npBklwEaHac_3LMZePMvOgNzCLF/pub?output=csv";
+  try{
+    const resp=await fetch(DOCTORS_CSV_URL);
+    const text=await resp.text();
+    const rows=parseCSV(text);
+    const names=[];
+    for(let i=1;i<rows.length;i++){
+      const firstCol=(rows[i][0]||'').trim();
+      if(firstCol)names.push(firstCol);
+    }
+    doctorNames=[...new Set(names)];
+  }catch(e){console.warn('Could not load doctors list:',e);}
 }
 
 async function scriptGet(params){const url=SCRIPT_URL+'?'+params.toString();const r=await fetch(url,{method:'GET',cache:'no-store'});const json=await r.json();if(json.error)throw new Error(json.error);return json;}
