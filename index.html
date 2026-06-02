@@ -140,7 +140,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 .fcond.vis{display:contents}
 .fp-btns{display:flex;gap:10px;justify-content:flex-start;padding:20px 0;border-top:1px solid var(--border-light);margin-top:24px;grid-column:1/-1}
 .ac-wrap{position:relative}
-.ac-drop{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--primary);border-top:none;border-radius:0 0 6px 6px;max-height:180px;overflow-y:auto;z-index:20;display:none}
+.ac-drop{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--primary);border-top:none;border-radius:0 0 6px 6px;max-height:180px;overflow-y:auto;z-index:2000;display:none}
 .ac-drop.open{display:block}
 .ac-item{padding:7px 12px;cursor:pointer;font-size:.85rem;border-bottom:1px solid var(--border-light);direction:ltr;text-align:left}
 .ac-item:hover,.ac-item.active{background:var(--primary);color:#fff}
@@ -285,6 +285,28 @@ async function loadData(){
     showToast('Error: '+e.message,'error');
   }
 }
+
+function parseCSV(text){
+  const rows=[];
+  let currentRow=[],currentField='';
+  let inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const char=text[i],nextChar=text[i+1];
+    if(inQuotes){
+      if(char==='"'){if(nextChar==='"'){currentField+='"';i++;}else inQuotes=false;}
+      else currentField+=char;
+    }else{
+      if(char==='"')inQuotes=true;
+      else if(char===','){currentRow.push(currentField);currentField='';}
+      else if(char==='\n'){currentRow.push(currentField);rows.push(currentRow);currentRow=[];currentField='';}
+      else if(char==='\r'){if(nextChar==='\n')i++;currentRow.push(currentField);rows.push(currentRow);currentRow=[];currentField='';}
+      else currentField+=char;
+    }
+  }
+  if(currentField!==''||currentRow.length>0){currentRow.push(currentField);rows.push(currentRow);}
+  return rows;
+}
+
 async function loadDoctors(){
   const DOCTORS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRDOEhW9VetivLm_3iGJgLJ9i86v0tcQcFpHw7TQBjZkWqr0TPM1npBklwEaHac_3LMZePMvOgNzCLF/pub?output=csv";
   try{
