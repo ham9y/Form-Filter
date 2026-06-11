@@ -178,6 +178,16 @@ footer{margin-top:26px;text-align:center;color:var(--text-muted);font-size:0.95r
   .iso-date{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;display:block;font-size:0.95rem;color:#334}
   .iso-date-wrap input[type="date"]{padding-inline-start:12px;padding-inline-end:12px}
   .iso-date-hide-native{color:transparent;text-shadow:none}
+  /* Hide native date text in WebKit (Android Chrome) by targeting datetime-edit pseudo elements */
+  input[type="date"].iso-date-hide-native::-webkit-datetime-edit,
+  input[type="date"].iso-date-hide-native::-webkit-datetime-edit-text,
+  input[type="date"].iso-date-hide-native::-webkit-datetime-edit-month-field,
+  input[type="date"].iso-date-hide-native::-webkit-datetime-edit-day-field,
+  input[type="date"].iso-date-hide-native::-webkit-datetime-edit-year-field {
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+    text-shadow: none !important;
+  }
 </style>
 </head>
 <body>
