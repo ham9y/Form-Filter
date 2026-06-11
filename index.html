@@ -173,6 +173,11 @@ footer{margin-top:26px;text-align:center;color:var(--text-muted);font-size:0.95r
 .table-wrapper::-webkit-scrollbar-track,.col-vis-dropdown::-webkit-scrollbar-track,.checkbox-group::-webkit-scrollbar-track,.form-panel::-webkit-scrollbar-track,.ac-drop::-webkit-scrollbar-track{background:#f0f0f0}
 .table-wrapper::-webkit-scrollbar-thumb,.col-vis-dropdown::-webkit-scrollbar-thumb,.form-panel::-webkit-scrollbar-thumb,.ac-drop::-webkit-scrollbar-thumb{background:#b0b8c4;border-radius:3px}
 .table-wrapper::-webkit-scrollbar-thumb:hover,.col-vis-dropdown::-webkit-scrollbar-thumb:hover,.form-panel::-webkit-scrollbar-thumb:hover,.ac-drop::-webkit-scrollbar-thumb:hover{background:#8895a5}
+  /* ISO overlay styles for date inputs inside the form panel */
+  .iso-date-wrap{position:relative;display:block}
+  .iso-date{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;display:block;font-size:0.95rem;color:#334}
+  .iso-date-wrap input[type="date"]{padding-inline-start:12px;padding-inline-end:12px}
+  .iso-date-hide-native{color:transparent;text-shadow:none}
 </style>
 </head>
 <body>
@@ -248,6 +253,33 @@ function normalizeSheetDateValue(val){
   var d=new Date(val);
   if(isNaN(d.getTime())) return val;
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// Format a date into 'yyyy Month dd' for visible labels (e.g., 2026 June 11)
+function formatDateLabel(v){
+  if(!v) return '';
+  var d=new Date(v);
+  if(isNaN(d.getTime())) return v;
+  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return d.getFullYear()+' '+months[d.getMonth()]+' '+String(d.getDate()).padStart(2,'0');
+}
+
+// Attach ISO overlay displays for date inputs (used by dynamic edit form)
+function attachIsoDateDisplays(root){
+  try{
+    (root||document).querySelectorAll('input[type="date"]').forEach(function(el){
+      if(el.dataset.isoAttached) return; el.dataset.isoAttached='1';
+      var wrap=document.createElement('div'); wrap.className='iso-date-wrap'; wrap.style.display = getComputedStyle(el).display === 'block' ? 'block' : 'inline-block';
+      el.parentNode.insertBefore(wrap, el); wrap.appendChild(el);
+      var span=document.createElement('span'); span.className='iso-date'; wrap.appendChild(span);
+      var update=function(){ span.textContent = el.value? formatDateLabel(el.value) : ''; };
+      // hide native text and keep overlay as visible value
+      el.classList.add('iso-date-hide-native');
+      el.addEventListener('input', update); el.addEventListener('change', update); el.addEventListener('blur', update);
+      wrap.addEventListener('click', function(){ try{ el.showPicker && el.showPicker(); el.focus(); }catch(e){ el.focus(); } });
+      update();
+    });
+  }catch(e){console.warn('attachIsoDateDisplays error',e);}
 }
 
 const FL={timestamp:"Timestamp",patient_name:"Patient Name",age:"Age",address:"Address",admission_date:"Admission Date",ticket_id:"Ticket ID",shift_day:"Shift Day",comorbidities:"Comorbidities",past_medical:"Past Medical History",prev_surgery:"Previous Surgery",surgery_type:"Surgery Type",parity_type:"Parity Type",exact_parity:"Exact Parity",living_children:"Living Children",living_males:"Living Males",last_delivery_time:"Last Delivery Time",last_abortion_time:"Last Abortion Time",prev_cs:"Previous C/S",cs_number:"C/S Number",sbp:"SBP",dbp:"DBP",pulse:"Pulse",temperature:"Temperature",resp_rate:"Resp Rate",consciousness:"Consciousness",o2_sat:"O2 Sat",urine_output:"Urine Output",meow_score:"MEOW Score",lab_tests:"Lab Tests",positive_lab_data:"Positive Lab Data",imaging:"Imaging",positive_imaging_data:"Positive Imaging Data",blood_transfusion:"Blood Transfusion",blood_group:"Blood Group",transfused:"Transfused Components",case_type:"Case Type",preg_conditions:"Preg Conditions",preg_condition_other:"Other Condition",gestational_age:"Gestational Age",exact_gestational_age:"Exact GA (wks)",admission_reason:"Admission Reason",labour_onset:"Labour Onset",pregnancy_type:"Pregnancy Type",fetal_presentation:"Fetal Presentation",delivery_date:"Delivery Date",delivery_mode:"Delivery Mode",cs_indications:"C/S Indications",fetus_gender:"Fetus Gender",fetal_complications:"Fetal Complications",maternal_complications:"Maternal Complications",delivery_report:"Delivery Report",robson:"Robson Class",contraceptive:"Contraceptive",contraceptive_refusal_reason:"Refusal Reason",abortion_type:"Abortion Type",abortion_intervention:"Abortion Intervention",abortion_intervention_details:"Intervention Details",abortion_treatment:"Abortion Treatment",abortion_contraceptive:"Abortion Contraceptive",vesicular_ga_lmp:"GA / LMP",vesicular_type:"Vesicular Type",vesicular_intervention:"Vesicular Intervention",vesicular_medications:"Medications",vesicular_contraceptive:"Vesicular Contraceptive",ectopic_type:"Ectopic Type",ectopic_disturbed:"Disturbed",ectopic_intervention:"Ectopic Intervention",ectopic_intervention_brief:"Intervention Brief",ectopic_contraceptive:"Ectopic Contraceptive",followup_indication:"Follow-Up Indication",followup_treatment:"Follow-Up Treatment",gyn_diagnosis:"GYN Diagnosis",gyn_intervention:"GYN Intervention",gyn_op_date:"Op Date",gyn_complications:"GYN Complications",gyn_report:"GYN Report",gyn_treatment:"GYN Treatment",complicated_location:"Comp Location",complicated_presentation:"Comp Presentation",complicated_intervention_done:"Intervention Done",complicated_intervention_todo:"Intervention To Do",complicated_treatment:"Comp Treatment",complicated_medical_report:"Medical Report",consultant:"Consultant",specialist:"Specialist",residents:"Residents",scrub_nurse:"Scrub Nurse",treatment_type:"Treatment Type",entered_by:"Entered By"};
@@ -448,6 +480,8 @@ function renderFilters(){
     h+='</div></div>';si++;
   });
   c.innerHTML=h;
+  // attach ISO/human-readable date labels under filter date inputs
+  try{ attachIsoDateDisplays(c); }catch(e){console.warn('attachIsoDateDisplays failed in renderFilters',e); }
 }
 function renderFilterField(f){
   var lb=FL[f]||f,h='<div class="field-group"><label>'+lb+'</label>';
@@ -510,7 +544,16 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.ge
 
 function renderCellValue(f,v){
   if(v===undefined||v===null) return '';
-  if(v instanceof Date) return v.toString();
+  if(DATE_RANGE.has(f)){
+    // format date-like values to human-readable 'yyyy Month dd'
+    try{
+      return formatDateLabel(v);
+    }catch(e){return String(v);}    
+  }
+  if(v instanceof Date){
+    var d=v;
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
   return String(v);
 }
 
@@ -686,6 +729,8 @@ function buildForm(){
   '</form>';
   attachFormListeners();
   setTimeout(function(){setupAC('f_consultant');setupAC('f_specialist');setupAC('f_specialist2');setupAC('f_residents');setupAC('f_residents2');setupAC('f_entered_by');},50);
+  // attach ISO date displays for date inputs inside the form panel
+  setTimeout(function(){attachIsoDateDisplays(document.getElementById('formBody'));},60);
 }
 
 function fsec(t,c){return '<div class="fsec"><div class="fsec-title" onclick="this.parentElement.classList.toggle(\'collapsed\')">'+t+'<span class="chev">&#9660;</span></div><div class="fsec-body">'+c+'</div></div>';}
@@ -713,12 +758,33 @@ function updateAdmissionReason(v){['cond_delivery','cond_abortion','cond_vesicul
 function populateForm(row){
   if(!row)return;
   Object.keys(FIM).forEach(function(f){
-    var val=row[FIM[f]]||'';
-    if(CB_FIELDS.has(f)){var vs=val.split(/\n/).map(function(v){return v.trim();}).filter(Boolean);document.querySelectorAll('input[name="'+f+'"]').forEach(function(cb){cb.checked=vs.some(function(v){return v.toLowerCase()===cb.value.toLowerCase();});});}
-    else if(RADIO_FIELDS.has(f)){document.querySelectorAll('input[name="'+f+'"]').forEach(function(r){r.checked=r.value.toLowerCase()===val.trim().toLowerCase();});}
-    else{var el=document.getElementById('f_'+f);if(el){if(el.tagName==='SELECT'){el.value=val;if(el.value!==val){for(var i=0;i<el.options.length;i++){if(el.options[i].value.toLowerCase()===val.trim().toLowerCase()){el.value=el.options[i].value;break;}}}}else el.value=val;}}
+    var val = row[FIM[f]] || '';
+    if(CB_FIELDS.has(f)){
+      var vs = String(val).split(/\n/).map(function(v){return v.trim();}).filter(Boolean);
+      document.querySelectorAll('input[name="'+f+'"]').forEach(function(cb){ cb.checked = vs.some(function(v){ return v.toLowerCase() === cb.value.toLowerCase(); }); });
+    } else if(RADIO_FIELDS.has(f)){
+      document.querySelectorAll('input[name="'+f+'"]').forEach(function(r){ r.checked = (r.value.toLowerCase() === String(val).trim().toLowerCase()); });
+    } else {
+      var el = document.getElementById('f_'+f);
+      if(!el) return;
+      if(el.tagName === 'SELECT'){
+        el.value = val;
+        if(el.value !== val){
+          for(var i=0;i<el.options.length;i++){
+            if(el.options[i].value.toLowerCase() === String(val).trim().toLowerCase()){ el.value = el.options[i].value; break; }
+          }
+        }
+      } else if(el.tagName === 'INPUT' && el.type === 'date' || DATE_RANGE.has(f)){
+        try{
+          el.value = val ? normalizeSheetDateValue(val) : '';
+        }catch(e){ el.value = String(val); }
+        // trigger input event so any ISO display updates
+        try{ el.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){}
+      } else {
+        el.value = val;
+      }
+    }
   });
-  var sp=(row[FIM.specialist]||'').split('\n');var s1=document.getElementById('f_specialist'),s2=document.getElementById('f_specialist2');if(s1&&sp[0])s1.value=sp[0].trim();if(s2&&sp[1])s2.value=sp[1].trim();
   var rp=(row[FIM.residents]||'').split('\n');var r1=document.getElementById('f_residents'),r2=document.getElementById('f_residents2');if(r1&&rp[0])r1.value=rp[0].trim();if(r2&&rp[1])r2.value=rp[1].trim();
   var sv=function(id){var el=document.querySelector('input[name="'+id+'"]:checked');return el?el.value:'';};
   tc('cond_surgery_type',sv('prev_surgery')==='YES');tc('cond_multipara',sv('parity_type')==='Multipara');tc('cond_cs_number',sv('prev_cs')==='Yes');
